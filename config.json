@@ -5,22 +5,29 @@
       "id": "sud",
       "name": "Hôpital Sud",
       "rooms": [
-        {"id":"sud_bloc1","label":"Hôpital Sud — Bloc 1","color":"blue"},
-        {"id":"sud_bloc2","label":"Hôpital Sud — Bloc 2","color":"blue"},
-        {"id":"sud_bloc3","label":"Hôpital Sud — Bloc 3","color":"blue"},
-        {"id":"sud_irm","label":"Hôpital Sud — IRM","color":"yellow"},
-        {"id":"sud_radio","label":"Hôpital Sud — Radio","color":"yellow"},
-        {"id":"sud_trait","label":"Hôpital Sud — Traitement","color":"green"}
+        {"id":"sud_bloc1","label":"Bloc 1","color":"blue"},
+        {"id":"sud_bloc2","label":"Bloc 2","color":"blue"},
+        {"id":"sud_bloc3","label":"Bloc 3","color":"blue"},
+        {"id":"sud_irm","label":"IRM","color":"yellow"},
+        {"id":"sud_radio","label":"Radio","color":"yellow"},
+        {"id":"sud_trait","label":"Traitement","color":"green"},
+        {"id":"sud_trait2","label":"372","color":"green"},
+        {"id":"sud_trait3","label":"373","color":"green"},
+        {"id":"sud_sdr","label":"Salle de réveil","color":"purple"}
       ]
     },
     {
       "id": "nord",
       "name": "Clinique Nord",
       "rooms": [
-        {"id":"nord_bloc1","label":"Clinique Nord — Bloc 1","color":"blue"},
-        {"id":"nord_bloc2","label":"Clinique Nord — Bloc 2","color":"blue"},
-        {"id":"nord_irm","label":"Clinique Nord — IRM","color":"yellow"},
-        {"id":"nord_exam1","label":"Clinique Nord — Examen 1","color":"green"}
+        {"id":"nord_bloc1","label":"Bloc 1","color":"blue"},
+        {"id":"nord_bloc2","label":"Bloc 2","color":"blue"},
+        {"id":"nord_irm","label":"IRM","color":"yellow"},
+        {"id":"nord_radio","label":"Radio","color":"yellow"},
+        {"id":"nord_exam1","label":"Traitement 1","color":"green"},
+        {"id":"nord_exam2","label":"Traitement 2","color":"green"},
+        {"id":"nord_exam3","label":"Traitement 3","color":"green"},
+        {"id":"sud_sdr","label":"Salle de réveil","color":"purple"}
       ]
     }
   ],
@@ -28,12 +35,40 @@
     {"id":"int1","label":"Intervention 1"},
     {"id":"int2","label":"Intervention 2"},
     {"id":"int3","label":"Intervention 3"},
-    {"id":"int4","label":"Intervention 4"}
+    {"id":"psy","label":"Rdv psy"}
   ],
   "doctors": [
-    {"id":"abigael","name":"Abigael Swaguer","role":"Directrice","phone":"555-2631","service":"hors"},
-    {"id":"cassiopee","name":"Cassiopée Hellkaros","role":"Adjoint","phone":"555-4070","service":"en"},
-    {"id":"ailean","name":"Ailean H. McGregor","role":"Adjoint","phone":"555-5649","service":"en"},
-    {"id":"sophie","name":"Sophie Carter","role":"Chef de service","phone":"555-7145","service":"en"}
-  ]
+  { "id": "peter_caldwell", "name": "Peter Caldwell", "role": "Directeur", "phone": "555-0563", "bucket": "hors" },
+
+  { "id": "cassiopee_hellkaros", "name": "Cassiopée Hellkaros", "role": "Adjoint", "phone": "555-4070", "bucket": "hors" },
+  { "id": "ailean_h_mcgregor", "name": "Ailean H. McGregor", "role": "Adjoint", "phone": "555-5649", "bucket": "hors" },
+  { "id": "silvio_marshall", "name": "Silvio Marshall", "role": "Adjoint", "phone": "555-5708", "bucket": "hors" },
+
+  { "id": "jeff_roads", "name": "Jeff Roads", "role": "Chef de service", "phone": "555-3414", "bucket": "hors" },
+  { "id": "matteo_varro", "name": "Matteo Varro", "role": "Chef de service", "phone": "555-0238", "bucket": "hors" },
+  { "id": "sven_tramlt", "name": "Sven Tramlt", "role": "Chef de service", "phone": "555-7568", "bucket": "hors" },
+
+  { "id": "thomas_ferval", "name": "Thomas Ferval", "role": "Spécialiste", "phone": "555-1731", "bucket": "hors" },
+  { "id": "miles_carver", "name": "Miles Carver", "role": "Spécialiste", "phone": "555-4960", "bucket": "hors" },
+
+  { "id": "casey_perez", "name": "Casey Perez", "role": "Titulaire", "phone": "555-5525", "bucket": "hors" },
+  { "id": "alejandro_ortega", "name": "Alejandro Ortega", "role": "Titulaire", "phone": "555-4305", "bucket": "hors" },
+  { "id": "marion_kali", "name": "Marion Kali", "role": "Titulaire", "phone": "555-9276", "bucket": "hors" },
+  { "id": "toni_stryker", "name": "Toni Stryker", "role": "Titulaire", "phone": "555-7651", "bucket": "hors" },
+  { "id": "mei_everly", "name": "Mei Everly", "role": "Titulaire", "phone": "555-3908", "bucket": "hors" },
+  { "id": "liam_meiller_schmidt", "name": "Liam Meiller Schmidt", "role": "Titulaire", "phone": "555-3733", "bucket": "hors" },
+
+  { "id": "theo_stender", "name": "Théo Stender", "role": "Resident", "phone": "555-1882", "bucket": "hors" },
+  { "id": "wyatt_stark", "name": "Wyatt Stark", "role": "Resident", "phone": "555-9770", "bucket": "hors" },
+  { "id": "quinn_valmont", "name": "Quinn Valmont", "role": "Resident", "phone": "555-2746", "bucket": "hors" },
+  { "id": "ash_galileo", "name": "Ash Galileo", "role": "Resident", "phone": "555-4366", "bucket": "hors" },
+  { "id": "victoria_hatakori", "name": "Victoria Hatakori", "role": "Resident", "phone": "555-3308", "bucket": "hors" },
+
+  { "id": "mason_torres", "name": "Mason Torres", "role": "Interne", "phone": "555-0341", "bucket": "hors" },
+  { "id": "nathan_sparks", "name": "Nathan Sparks", "role": "Interne", "phone": "555-2392", "bucket": "hors" },
+  { "id": "emily_cruz", "name": "Emily Cruz", "role": "Interne", "phone": "555-2344", "bucket": "hors" },
+  { "id": "balthazar_obrian", "name": "Balthazar O'brian", "role": "Interne", "phone": "555-0875", "bucket": "hors" },
+  { "id": "isaora_ruiz", "name": "Isaora Ruiz", "role": "Interne", "phone": "555-4254", "bucket": "hors" }
+]
+
 }
