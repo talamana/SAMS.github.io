@@ -167,37 +167,6 @@ function makeInitialState(cfg){
 
 }
 
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return null;
-
-    const s = JSON.parse(raw);
-    if(!s?.placements) return null;
-
-    return s;
-  }catch{
-    return null;
-  }
-}
-
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function loadDoctors(){
-  try{
-    const raw = localStorage.getItem(DOCTORS_KEY);
-    if(!raw) return null;
-    const arr = JSON.parse(raw);
-    if(!Array.isArray(arr)) return null;
-    return arr;
-  }catch{ return null; }
-}
-function saveDoctors(arr){
-  localStorage.setItem(DOCTORS_KEY, JSON.stringify(arr));
-}
-
 function wireButtons(){
   btnAllReserve.addEventListener("click", () => {
   for(const d of cfg.doctors){
@@ -252,7 +221,7 @@ function wireButtons(){
       renderAll();
     }
   }
-});
+});}
 
 
   btnDelete.addEventListener("click", async (e) => {
@@ -461,13 +430,14 @@ function makeDoctorCard(d){
 
   // double-clic => réserve (sauf hors service)
   card.addEventListener("dblclick", () => {
-    if(!isHorsZone(state.placements[d.id])){
-      state.placements[d.id] = "reserve";
-      saveState();
-      ll();
-      setSelectedZone("reserve");
-    }
-  });
+  if(!isHorsZone(state.placements[d.id])){
+    state.placements[d.id] = "reserve";
+    saveState();      // supabase
+    setSelectedZone("reserve");
+    renderAll();
+  }
+});
+
 
   const top = document.createElement("div");
   top.className = "docTop";
@@ -639,9 +609,9 @@ function escapeHtml(s){
   }[m]));
 }
 function isHorsZone(z){
-  // robuste même si l’ancien code a écrit autre chose
-  return (z || "").toLowerCase().includes("hors");
+  return z === "hors";
 }
+
 
 function setSelectedZone(zoneId){
   selectedZoneId = zoneId;
