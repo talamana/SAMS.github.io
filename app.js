@@ -1,283 +1,285 @@
-const STORAGE_KEY = "dispatch_sams_state_v1";
+const STORAGE_KEY = "dispatch_sams_like_ui_v1";
 
-let baseConfig = null;   // config.json (original)
-let state = null;        // état courant (modifiable)
+let cfg = null;
+let state = null;
 
 const elTitle = document.getElementById("appTitle");
-const elRooms = document.getElementById("rooms");
-const elPool  = document.getElementById("pool");
-const elSearch = document.getElementById("search");
+const elTabs = document.getElementById("tabs");
+const elRoomsGrid = document.getElementById("roomsGrid");
+const elInterventionsRow = document.getElementById("interventionsRow");
 
-const btnReset  = document.getElementById("btnReset");
-const btnExport = document.getElementById("btnExport");
-const btnImport = document.getElementById("btnImport");
+const elReserveList = document.getElementById("reserveList");
+const elHorsList = document.getElementById("horsList");
+const elCountReserve = document.getElementById("countReserve");
+const elCountHors = document.getElementById("countHors");
 
-const modal = document.getElementById("modal");
-const modalTitle = document.getElementById("modalTitle");
-const modalText = document.getElementById("modalText");
-const modalOk = document.getElementById("modalOk");
+const btnAllReserve = document.getElementById("btnAllReserve");
 
 init();
 
 async function init(){
-  baseConfig = await loadConfig();
-  state = loadStateFromStorage() ?? makeStateFromConfig(baseConfig);
+  cfg = await fetch("./config.json", {cache:"no-store"}).then(r => r.json());
+  elTitle.textContent = cfg.appTitle || "Dispatch";
 
-  elTitle.textContent = baseConfig.appTitle || "Dispatch";
-  wireUI();
+  state = loadState() ?? makeInitialState(cfg);
+
+  renderTabs();
   renderAll();
-  autosave();
-}
 
-function wireUI(){
-  btnReset.addEventListener("click", () => {
-    state = makeStateFromConfig(baseConfig);
-    saveStateToStorage(state);
+  // droppables (boss / reserve)
+  document.querySelectorAll(".droppable").forEach(el => makeDroppable(el, el.dataset.zone));
+
+  btnAllReserve.addEventListener("click", () => {
+    // renvoyer tout le monde en réserve (sauf hors-service: on les met aussi en réserve mais en gardant le flag service)
+    for (const id of Object.keys(state.placements)) state.placements[id] = "reserve";
+    saveState();
     renderAll();
   });
-
-  btnExport.addEventListener("click", () => {
-    openModal("Exporter l’état (JSON)", JSON.stringify(state, null, 2), { mode: "export" });
-  });
-
-  btnImport.addEventListener("click", () => {
-    openModal("Importer un état (JSON)", "", { mode: "import" });
-  });
-
-  elSearch.addEventListener("input", () => renderPool());
-
-  // Pool droppable
-  makeDroppable(elPool, "__POOL__");
 }
 
-function autosave(){
-  // sauvegarde automatique sur chaque changement via saveStateToStorage() (appelé dans moveDoctor)
-}
-
-async function loadConfig(){
-  const res = await fetch("./config.json", { cache: "no-store" });
-  if(!res.ok) throw new Error("Impossible de charger config.json");
-  return await res.json();
-}
-
-function makeStateFromConfig(cfg){
-  // On garde doctors/rooms, et assignments
-  // + pool implicite (médecins non assignés)
-  const rooms = cfg.rooms.map(r => ({...r}));
-  const doctors = cfg.doctors.map(d => ({...d}));
-
-  const assignments = {};
-  for(const r of rooms){
-    assignments[r.id] = Array.isArray(cfg.assignments?.[r.id]) ? [...cfg.assignments[r.id]] : [];
+function makeInitialState(cfg){
+  const placements = {};
+  // par défaut : tout le monde en "hors" (liste) si service=hors, sinon "reserve"
+  for(const d of cfg.doctors){
+    placements[d.id] = d.service === "hors" ? "hors" : "reserve";
   }
-
-  return { rooms, doctors, assignments };
+  return {
+    activeSiteId: cfg.sites?.[0]?.id ?? "sud",
+    placements,        // doctorId -> zoneId ("hors","reserve","boss", roomId, interventionId)
+    service: Object.fromEntries(cfg.doctors.map(d => [d.id, d.service || "en"])) // en|hors
+  };
 }
 
-function loadStateFromStorage(){
+function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return null;
-    const parsed = JSON.parse(raw);
-
-    // validation légère
-    if(!parsed?.rooms || !parsed?.doctors || !parsed?.assignments) return null;
-    return parsed;
-  }catch{
-    return null;
-  }
+    const s = JSON.parse(raw);
+    if(!s?.placements || !s?.service) return null;
+    return s;
+  }catch{ return null; }
 }
 
-function saveStateToStorage(s){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function renderTabs(){
+  elTabs.innerHTML = "";
+  for(const site of cfg.sites){
+    const b = document.createElement("button");
+    b.className = "tab" + (site.id === state.activeSiteId ? " active" : "");
+    b.textContent = site.name;
+    b.addEventListener("click", () => {
+      state.activeSiteId = site.id;
+      saveState();
+      renderAll();
+      renderTabs();
+    });
+    elTabs.appendChild(b);
+  }
 }
 
 function renderAll(){
   renderRooms();
-  renderPool();
+  renderInterventions();
+  renderRightPanels();
 }
 
 function renderRooms(){
-  elRooms.innerHTML = "";
+  elRoomsGrid.innerHTML = "";
 
-  for(const room of state.rooms){
-    const wrap = document.createElement("div");
-    wrap.className = "room";
+  const site = cfg.sites.find(s => s.id === state.activeSiteId);
+  const rooms = site?.rooms ?? [];
 
-    const header = document.createElement("div");
-    header.className = "roomHeader";
+  for(const r of rooms){
+    const pill = document.createElement("div");
+    pill.className = `roomPill droppable pill-${r.color || "blue"}`;
+    pill.dataset.zone = r.id;
 
-    const name = document.createElement("div");
-    name.className = "name";
-    name.textContent = room.name;
+    const left = document.createElement("div");
+    left.textContent = r.label;
 
-    const count = document.createElement("div");
-    count.className = "count";
-    const n = (state.assignments[room.id] || []).length;
-    count.textContent = `${n} médecin${n>1 ? "s" : ""}`;
+    const right = document.createElement("div");
+    right.className = "small";
+    right.textContent = `${countInZone(r.id)} médecin`;
 
-    header.appendChild(name);
-    header.appendChild(count);
+    pill.appendChild(left);
+    pill.appendChild(right);
 
-    const zone = document.createElement("div");
-    zone.className = "dropzone droppable";
-    zone.dataset.room = room.id;
-
-    wrap.appendChild(header);
-    wrap.appendChild(zone);
-
-    elRooms.appendChild(wrap);
-
-    makeDroppable(zone, room.id);
-    renderRoomDoctors(room.id);
+    makeDroppable(pill, r.id);
+    elRoomsGrid.appendChild(pill);
   }
 }
 
-function renderRoomDoctors(roomId){
-  const zone = elRooms.querySelector(`.dropzone[data-room="${roomId}"]`);
-  if(!zone) return;
-  zone.innerHTML = "";
+function renderInterventions(){
+  elInterventionsRow.innerHTML = "";
 
-  const ids = state.assignments[roomId] || [];
-  for(const docId of ids){
-    const doc = getDoctor(docId);
-    if(!doc) continue;
-    zone.appendChild(makeDoctorCard(doc));
+  for(const it of cfg.interventions){
+    const pill = document.createElement("div");
+    pill.className = `roomPill droppable pill-pink`;
+    pill.dataset.zone = it.id;
+
+    const left = document.createElement("div");
+    left.textContent = it.label;
+
+    const right = document.createElement("div");
+    right.className = "small";
+    right.textContent = `${countInZone(it.id)} médecin`;
+
+    pill.appendChild(left);
+    pill.appendChild(right);
+
+    makeDroppable(pill, it.id);
+    elInterventionsRow.appendChild(pill);
   }
 }
 
-function renderPool(){
-  // Pool = tous les médecins non présents dans assignments[*]
-  const q = (elSearch.value || "").trim().toLowerCase();
-  const assigned = new Set();
-  for(const roomId of Object.keys(state.assignments)){
-    for(const id of state.assignments[roomId] || []) assigned.add(id);
+function renderRightPanels(){
+  // Réserve: on affiche les cartes si elles sont placées en réserve
+  elReserveList.innerHTML = "";
+  const reserveDocs = cfg.doctors.filter(d => state.placements[d.id] === "reserve");
+  elCountReserve.textContent = formatCount(reserveDocs.length, "médecin");
+
+  for(const d of reserveDocs){
+    elReserveList.appendChild(makeDoctorCard(d));
   }
 
-  elPool.innerHTML = "";
+  // Hors-service: cartes scroll
+  elHorsList.innerHTML = "";
+  const horsDocs = cfg.doctors.filter(d => state.placements[d.id] === "hors");
+  elCountHors.textContent = formatCount(horsDocs.length, "médecin");
 
-  for(const doc of state.doctors){
-    if(assigned.has(doc.id)) continue;
-
-    const hay = `${doc.name} ${doc.role || ""}`.toLowerCase();
-    if(q && !hay.includes(q)) continue;
-
-    elPool.appendChild(makeDoctorCard(doc));
+  for(const d of horsDocs){
+    elHorsList.appendChild(makeDoctorCard(d));
   }
 }
 
-function makeDoctorCard(doc){
+function makeDoctorCard(d){
   const card = document.createElement("div");
-  card.className = "card";
+  card.className = "docCard";
   card.draggable = true;
-  card.dataset.doc = doc.id;
-
-  const top = document.createElement("div");
-  top.className = "top";
-
-  const name = document.createElement("div");
-  name.className = "name";
-  name.textContent = doc.name;
-
-  const badge = document.createElement("div");
-  badge.className = "badge";
-  badge.textContent = doc.id;
-
-  top.appendChild(name);
-  top.appendChild(badge);
-
-  const role = document.createElement("div");
-  role.className = "role";
-  role.textContent = doc.role ? doc.role : "—";
-
-  card.appendChild(top);
-  card.appendChild(role);
+  card.dataset.doc = d.id;
 
   card.addEventListener("dragstart", (e) => {
-    e.dataTransfer.setData("text/plain", doc.id);
+    e.dataTransfer.setData("text/plain", d.id);
     e.dataTransfer.effectAllowed = "move";
   });
+
+  // double-clic => réserve
+  card.addEventListener("dblclick", () => {
+    state.placements[d.id] = "reserve";
+    saveState();
+    renderAll();
+    // on re-render les compteurs à gauche
+    renderRooms();
+    renderInterventions();
+  });
+
+  const top = document.createElement("div");
+  top.className = "docTop";
+
+  const left = document.createElement("div");
+  const name = document.createElement("div");
+  name.className = "docName";
+  name.textContent = d.name;
+
+  const phone = document.createElement("div");
+  phone.className = "docLine";
+  phone.innerHTML = `📞 <span>${d.phone || "—"}</span>`;
+
+  left.appendChild(name);
+  left.appendChild(phone);
+
+  const badges = document.createElement("div");
+  badges.className = "badges";
+
+  const role = document.createElement("div");
+  role.className = "badge " + roleBadgeClass(d.role);
+  role.textContent = d.role || "—";
+
+  const serviceBadge = document.createElement("div");
+  const isEn = (state.service[d.id] ?? "en") === "en";
+  serviceBadge.className = "badge " + (isEn ? "b-green" : "b-pink");
+  serviceBadge.textContent = isEn ? "En service" : "Hors-service";
+
+  badges.appendChild(role);
+  badges.appendChild(serviceBadge);
+
+  top.appendChild(left);
+  top.appendChild(badges);
+
+  const actions = document.createElement("div");
+  actions.className = "docActions";
+
+  const icons = document.createElement("div");
+  icons.className = "iconRow";
+  icons.appendChild(makeIcon("🩺"));
+  icons.appendChild(makeIcon("🩻"));
+  icons.appendChild(makeIcon("🧾"));
+
+  const toggle = document.createElement("button");
+  toggle.className = "toggle " + (isEn ? "en" : "hors");
+  toggle.textContent = isEn ? "En service" : "Hors-service";
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const nowEn = (state.service[d.id] ?? "en") !== "en";
+    state.service[d.id] = nowEn ? "en" : "hors";
+    saveState();
+    renderAll();
+  });
+
+  actions.appendChild(icons);
+  actions.appendChild(toggle);
+
+  card.appendChild(top);
+  card.appendChild(actions);
 
   return card;
 }
 
-function makeDroppable(element, roomId){
-  element.addEventListener("dragover", (e) => {
+function makeIcon(txt){
+  const el = document.createElement("span");
+  el.className = "icon";
+  el.textContent = txt;
+  return el;
+}
+
+function roleBadgeClass(role){
+  const r = (role || "").toLowerCase();
+  if(r.includes("direct")) return "b-red";
+  if(r.includes("chef")) return "b-yellow";
+  if(r.includes("adj")) return "b-pink";
+  return "b-yellow";
+}
+
+function makeDroppable(el, zoneId){
+  el.addEventListener("dragover", (e) => {
     e.preventDefault();
-    element.classList.add("dragOver");
+    el.classList.add("dragOver");
     e.dataTransfer.dropEffect = "move";
   });
-
-  element.addEventListener("dragleave", () => {
-    element.classList.remove("dragOver");
-  });
-
-  element.addEventListener("drop", (e) => {
+  el.addEventListener("dragleave", () => el.classList.remove("dragOver"));
+  el.addEventListener("drop", (e) => {
     e.preventDefault();
-    element.classList.remove("dragOver");
+    el.classList.remove("dragOver");
     const docId = e.dataTransfer.getData("text/plain");
     if(!docId) return;
 
-    if(roomId === "__POOL__"){
-      unassignDoctor(docId);
-    }else{
-      assignDoctorToRoom(docId, roomId);
-    }
-    saveStateToStorage(state);
+    state.placements[docId] = zoneId;
+    saveState();
+
+    // maj UI
     renderAll();
+    renderRooms();
+    renderInterventions();
   });
 }
 
-function getDoctor(id){
-  return state.doctors.find(d => d.id === id);
+function countInZone(zoneId){
+  return cfg.doctors.reduce((acc, d) => acc + ((state.placements[d.id] === zoneId) ? 1 : 0), 0);
 }
 
-function unassignDoctor(docId){
-  for(const rid of Object.keys(state.assignments)){
-    const arr = state.assignments[rid] || [];
-    state.assignments[rid] = arr.filter(x => x !== docId);
-  }
-}
-
-function assignDoctorToRoom(docId, roomId){
-  // unassign partout puis add dans roomId
-  unassignDoctor(docId);
-
-  if(!state.assignments[roomId]) state.assignments[roomId] = [];
-  state.assignments[roomId].push(docId);
-}
-
-// Modal
-function openModal(title, text, { mode }){
-  modalTitle.textContent = title;
-  modalText.value = text;
-  modal.showModal();
-
-  modalOk.onclick = () => {
-    if(mode === "import"){
-      const raw = modalText.value.trim();
-      if(!raw) return;
-      try{
-        const parsed = JSON.parse(raw);
-        // validation légère
-        if(!parsed.rooms || !parsed.doctors || !parsed.assignments){
-          alert("JSON invalide : il manque rooms/doctors/assignments");
-          return;
-        }
-        state = parsed;
-        saveStateToStorage(state);
-        renderAll();
-      }catch(err){
-        alert("JSON invalide (parse error).");
-      }
-    }
-  };
-
-  if(mode === "export"){
-    // sélectionner automatiquement pour copier
-    setTimeout(() => {
-      modalText.focus();
-      modalText.select();
-    }, 50);
-  }
+function formatCount(n, word){
+  return `${n} ${word}${n > 1 ? "s" : ""}`;
 }
