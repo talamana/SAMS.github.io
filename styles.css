@@ -105,14 +105,36 @@ body{
 .roomPill{
   border-radius: 14px;
   padding: 14px 16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
   color:#111;
   font-weight:700;
   box-shadow: var(--shadow);
   border:1px solid rgba(0,0,0,.08);
+
+  /* ✅ IMPORTANT: on passe en colonne */
+  display:flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 }
+.zoneHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.zoneBody{
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+/* Version compacte des cartes dans les salles */
+.docCard.compact{
+  padding: 10px;
+  margin-bottom: 0;
+}
+.docCard.compact .docActions{ display:none; }
+
 .roomPill .small{
   font-size:12px;
   font-weight:700;
