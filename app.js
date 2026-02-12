@@ -54,7 +54,6 @@ async function init(){
   state = loadState() ?? makeInitialState(cfg);
 
   renderTabs();
-  null();
   wireGlobalDroppables();
   wireButtons();
 }
