@@ -211,20 +211,15 @@ function renderRooms(){
 
   for(const r of rooms){
     const zoneId = r.id;
-
-    // Wrapper de zone (même classe qu'avant pour garder le style)
-    const pill = document.createElement("div");
-    pill.className = `roomPill droppable pill-${r.color || "blue"}`;
-    pill.dataset.zone = zoneId;
-
-    // Récupère les docs dans cette zone
     const docs = getDoctorsInZone(zoneId);
 
-    // HEADER (titre + compteur)
+    const card = document.createElement("div");
+    card.className = `roomPill droppable pill-${r.color || "blue"}`;
+    card.dataset.zone = zoneId;
+
+    // HEADER
     const header = document.createElement("div");
-    header.style.display = "flex";
-    header.style.justifyContent = "space-between";
-    header.style.alignItems = "center";
+    header.className = "zoneHeader";
 
     const title = document.createElement("div");
     title.textContent = r.label;
@@ -236,12 +231,11 @@ function renderRooms(){
     header.appendChild(title);
     header.appendChild(count);
 
-    // BODY (cartes des médecins)
+    // BODY
     const body = document.createElement("div");
     body.className = "zoneBody";
 
     if(docs.length === 0){
-      // Optionnel : placeholder léger
       const empty = document.createElement("div");
       empty.className = "small";
       empty.style.opacity = "0.7";
@@ -253,22 +247,13 @@ function renderRooms(){
       }
     }
 
-    pill.appendChild(header);
-    pill.appendChild(body);
+    card.appendChild(header);
+    card.appendChild(body);
 
-    // Drag & Drop
-    makeDroppable(pill, zoneId);
-
-    // (Optionnel) clic = sélection (si tu gardes panneau Détails)
-    pill.addEventListener("click", (e) => {
-      e.preventDefault();
-      if(typeof setSelectedZone === "function") setSelectedZone(zoneId);
-    });
-
-    elRoomsGrid.appendChild(pill);
+    makeDroppable(card, zoneId);
+    elRoomsGrid.appendChild(card);
   }
 }
-
 
 function renderInterventions(){
   elInterventionsRow.innerHTML = "";
@@ -277,18 +262,15 @@ function renderInterventions(){
 
   for(const it of interventions){
     const zoneId = it.id;
-
-    const pill = document.createElement("div");
-    pill.className = "roomPill droppable pill-pink";
-    pill.dataset.zone = zoneId;
-
     const docs = getDoctorsInZone(zoneId);
+
+    const card = document.createElement("div");
+    card.className = "roomPill droppable pill-pink";
+    card.dataset.zone = zoneId;
 
     // HEADER
     const header = document.createElement("div");
-    header.style.display = "flex";
-    header.style.justifyContent = "space-between";
-    header.style.alignItems = "center";
+    header.className = "zoneHeader";
 
     const title = document.createElement("div");
     title.textContent = it.label;
@@ -316,21 +298,13 @@ function renderInterventions(){
       }
     }
 
-    pill.appendChild(header);
-    pill.appendChild(body);
+    card.appendChild(header);
+    card.appendChild(body);
 
-    makeDroppable(pill, zoneId);
-
-    // (Optionnel) clic = sélection (si tu gardes panneau Détails)
-    pill.addEventListener("click", (e) => {
-      e.preventDefault();
-      if(typeof setSelectedZone === "function") setSelectedZone(zoneId);
-    });
-
-    elInterventionsRow.appendChild(pill);
+    makeDroppable(card, zoneId);
+    elInterventionsRow.appendChild(card);
   }
 }
-
 
 function renderRightPanels(){
   // Réserve
