@@ -1,6 +1,8 @@
 const STORAGE_KEY = "dispatch_sams_v3_state";
 const DOCTORS_KEY = "dispatch_sams_v3_doctors";
 const elBossCard = document.getElementById("bossCard");
+const bossSelect = document.getElementById("bossSelect");
+const bossDisplay = document.getElementById("bossDisplay");
 
 
 
@@ -55,6 +57,8 @@ async function init(){
 
   renderTabs();
   renderAll();
+  renderBossSelect();
+wireBossSelect();
   wireGlobalDroppables();
   wireButtons();
 }
@@ -66,10 +70,12 @@ function makeInitialState(cfg){
     const bucket = (d.bucket || d.service || "reserve");
     placements[d.id] = (bucket === "hors") ? "hors" : "reserve";
   }
-  return {
-    activeSiteId: cfg.sites?.[0]?.id ?? "sud",
-    placements // doctorId -> zoneId ("hors","reserve","boss", roomId, interventionId)
-  };
+ return {
+  activeSiteId: cfg.sites?.[0]?.id ?? "sud",
+  placements,
+  dispatchBossId: null
+};
+
 }
 
 function loadState(){
@@ -557,6 +563,50 @@ function makeDoctorCardCompact(d){
   const card = makeDoctorCard(d);
   card.classList.add("compact");
   return card;
+}
+function renderBossSelect(){
+  if(!bossSelect) return;
+
+  bossSelect.innerHTML = "";
+
+  // Option vide
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "— Aucun —";
+  bossSelect.appendChild(opt0);
+
+  // Options médecins
+  for(const d of cfg.doctors){
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = `${d.name} — ${d.role || "—"}`;
+    bossSelect.appendChild(opt);
+  }
+
+  bossSelect.value = state.dispatchBossId || "";
+  renderBossDisplay();
+}
+
+function wireBossSelect(){
+  if(!bossSelect) return;
+
+  bossSelect.addEventListener("change", () => {
+    state.dispatchBossId = bossSelect.value || null;
+    saveState();
+    renderBossDisplay();
+  });
+}
+
+function renderBossDisplay(){
+  if(!bossDisplay) return;
+
+  if(!state.dispatchBossId){
+    bossDisplay.textContent = "Aucun responsable sélectionné";
+    return;
+  }
+
+  const d = cfg.doctors.find(x => x.id === state.dispatchBossId);
+  bossDisplay.textContent = d ? d.name : "Responsable inconnu";
 }
 
 
