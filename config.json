@@ -10,13 +10,7 @@
         {"id":"sud_bloc3","label":"Hôpital Sud — Bloc 3","color":"blue"},
         {"id":"sud_irm","label":"Hôpital Sud — IRM","color":"yellow"},
         {"id":"sud_radio","label":"Hôpital Sud — Radio","color":"yellow"},
-        {"id":"sud_trait","label":"Hôpital Sud — Traitement","color":"green"},
-        {"id":"sud_372","label":"Hôpital Sud — 372 (examen)","color":"green"},
-        {"id":"sud_373","label":"Hôpital Sud — 373 (examen)","color":"green"},
-        {"id":"sud_370","label":"Hôpital Sud — 370 (chambre)","color":"purple"},
-        {"id":"sud_369","label":"Hôpital Sud — 369 (chambre)","color":"purple"},
-        {"id":"sud_371","label":"Hôpital Sud — 371 (chambre)","color":"purple"},
-        {"id":"sud_374","label":"Hôpital Sud — 374 (chambre)","color":"purple"}
+        {"id":"sud_trait","label":"Hôpital Sud — Traitement","color":"green"}
       ]
     },
     {
@@ -26,9 +20,7 @@
         {"id":"nord_bloc1","label":"Clinique Nord — Bloc 1","color":"blue"},
         {"id":"nord_bloc2","label":"Clinique Nord — Bloc 2","color":"blue"},
         {"id":"nord_irm","label":"Clinique Nord — IRM","color":"yellow"},
-        {"id":"nord_radio","label":"Clinique Nord — Radio","color":"yellow"},
-        {"id":"nord_exam1","label":"Clinique Nord — Examen 1","color":"green"},
-        {"id":"nord_exam2","label":"Clinique Nord — Examen 2","color":"green"}
+        {"id":"nord_exam1","label":"Clinique Nord — Examen 1","color":"green"}
       ]
     }
   ],
