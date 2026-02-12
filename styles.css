@@ -407,3 +407,23 @@ body{
 }
 .docCard.compact .docActions{ display:none; }
 
+.bossSelect{
+  width:100%;
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.15);
+  background: rgba(255,255,255,.65);
+  color:#111;
+  font-weight:700;
+}
+
+.bossDisplay{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  background: rgba(255,255,255,.35);
+  border:1px solid rgba(0,0,0,.10);
+  color:#111;
+  font-weight:800;
+}
