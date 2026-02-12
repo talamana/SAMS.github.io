@@ -3,6 +3,7 @@ const DOCTORS_KEY = "dispatch_sams_v3_doctors";
 const elBossCard = document.getElementById("bossCard");
 
 
+
 let cfg = null;
 let state = null;
 
