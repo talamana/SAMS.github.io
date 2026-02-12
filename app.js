@@ -731,7 +731,6 @@ function renderBossDisplay(){
   bossDisplay.textContent = d ? d.name : "Responsable inconnu";
 }
 
-let realtimeChannel = null;
 
 function startRealtime(){
   if(realtimeChannel) return;
