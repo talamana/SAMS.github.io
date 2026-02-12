@@ -1,0 +1,210 @@
+:root{
+  --bg:#0b0f1a;
+  --panel:#11182a;
+  --card:#16213a;
+  --card2:#1b2a4b;
+  --text:#eaf0ff;
+  --muted:#a8b3d6;
+  --border:rgba(255,255,255,.08);
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  --radius:16px;
+  --gap:14px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background: radial-gradient(1200px 600px at 20% 0%, rgba(66,120,255,.18), transparent 60%),
+              radial-gradient(1000px 500px at 90% 10%, rgba(255,140,66,.14), transparent 60%),
+              var(--bg);
+  color:var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  padding:18px 20px;
+  border-bottom:1px solid var(--border);
+}
+
+.title h1{margin:0; font-size:20px}
+.subtitle{margin-top:4px; color:var(--muted); font-size:13px}
+
+.actions{display:flex; gap:10px; flex-wrap:wrap}
+.btn{
+  border:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  box-shadow: var(--shadow);
+}
+.btn.ghost{
+  background: transparent;
+  box-shadow:none;
+}
+.btn:active{transform: translateY(1px);}
+
+.layout{
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  gap:16px;
+  padding:16px;
+  height: calc(100% - 78px);
+}
+
+.panel{
+  background: rgba(17,24,42,.65);
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  padding:12px;
+  box-shadow: var(--shadow);
+  display:flex;
+  flex-direction:column;
+  min-height: 0;
+}
+
+.panelHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:4px 4px 10px 4px;
+}
+.panelHeader h2{margin:0; font-size:15px}
+.search{
+  width: 160px;
+  padding:9px 10px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background: rgba(0,0,0,.25);
+  color: var(--text);
+}
+
+.list{
+  flex:1;
+  min-height: 0;
+  overflow:auto;
+  padding:10px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.15);
+  border:1px dashed rgba(255,255,255,.10);
+}
+
+.hint{
+  margin-top:10px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.board{
+  min-height:0;
+}
+.rooms{
+  height:100%;
+  overflow:auto;
+  display:grid;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  gap: var(--gap);
+}
+
+.room{
+  background: rgba(17,24,42,.55);
+  border:1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  min-height: 240px;
+}
+
+.roomHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  margin-bottom:10px;
+}
+.roomHeader .name{font-weight:700}
+.roomHeader .count{color:var(--muted); font-size:12px}
+
+.dropzone{
+  flex:1;
+  min-height: 0;
+  overflow:auto;
+  padding:10px;
+  border-radius:14px;
+  background: rgba(0,0,0,.12);
+  border:1px dashed rgba(255,255,255,.10);
+}
+
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  border:1px solid rgba(255,255,255,.10);
+  border-radius: 14px;
+  padding:10px 10px;
+  margin-bottom:10px;
+  cursor: grab;
+  user-select:none;
+}
+.card:active{cursor:grabbing}
+.card .top{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+.card .name{font-weight:700; font-size:13px}
+.badge{
+  font-size:11px;
+  padding:3px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  color: var(--muted);
+  border:1px solid rgba(255,255,255,.10);
+}
+.card .role{
+  margin-top:6px;
+  font-size:12px;
+  color: var(--muted);
+}
+
+.dragOver{
+  outline: 2px solid rgba(120,170,255,.6);
+  outline-offset: 2px;
+}
+
+dialog::backdrop{background: rgba(0,0,0,.6)}
+.modal{
+  width: min(860px, 92vw);
+  background: rgba(17,24,42,.95);
+  color: var(--text);
+  border:1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+}
+.modal h3{margin: 4px 0 10px 0}
+.modal textarea{
+  width:100%;
+  height: 52vh;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,.25);
+  color: var(--text);
+  padding: 12px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.modalActions{
+  margin-top: 10px;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+.modalHint{color: var(--muted); font-size:12px; margin:10px 0 0 0}
