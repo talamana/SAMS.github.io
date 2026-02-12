@@ -134,12 +134,16 @@
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  window.supabase = createClient(
-    "https://TONPROJET.supabase.co",
-    "TON_ANON_KEY"
+  const supabase = createClient(
+    "https://myymgkdlndiieipqakrs.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15eW1na2RsbmRpaWVpcHFha3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4ODcwMTgsImV4cCI6MjA4NjQ2MzAxOH0.4HLTHvfpLC_mnIts4-QVRPYDgg3wY219B0SVKbIto6o"
   );
+
+  window.supabase = supabase;
 </script>
+
 <script src="app.js"></script>
+
 
 </body>
 </html>
