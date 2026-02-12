@@ -1,0 +1,22 @@
+{
+  "appTitle": "Dispatch SAMS",
+  "rooms": [
+    { "id": "triage", "name": "Triage" },
+    { "id": "dechoc", "name": "Déchoc" },
+    { "id": "salle1", "name": "Salle 1" },
+    { "id": "salle2", "name": "Salle 2" },
+    { "id": "radio", "name": "Imagerie" }
+  ],
+  "doctors": [
+    { "id": "miles", "name": "Dr Miles Carver", "role": "Urgences" },
+    { "id": "mei", "name": "Dr Mei Everly", "role": "Chirurgie" },
+    { "id": "marion", "name": "Dr Marion Kali", "role": "Anesthésie" }
+  ],
+  "assignments": {
+    "triage": ["miles"],
+    "dechoc": ["marion"],
+    "salle1": ["mei"],
+    "salle2": [],
+    "radio": []
+  }
+}
