@@ -1,51 +1,68 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Dispatch SAMS</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <header class="topbar">
-    <div class="title">
+  <header class="header">
+    <div class="titleBlock">
       <h1 id="appTitle">Dispatch SAMS</h1>
-      <div class="subtitle">Drag & drop des médecins entre les salles</div>
+
+      <div class="tabs" id="tabs"></div>
     </div>
 
-    <div class="actions">
-      <button id="btnReset" class="btn ghost" title="Revenir au config.json">Reset</button>
-      <button id="btnExport" class="btn" title="Copier l’état actuel en JSON">Exporter JSON</button>
-      <button id="btnImport" class="btn" title="Importer un JSON">Importer JSON</button>
+    <div class="topRight">
+      <div class="bossDrop droppable" data-zone="boss">
+        <div class="bossTitle">Responsable du dispatch</div>
+        <div class="bossHint">Glissez-déposez une carte ici</div>
+      </div>
+
+      <button class="btnDanger" id="btnAllReserve">Tout renvoyer en Réserve</button>
     </div>
   </header>
 
-  <main class="layout">
-    <section class="panel">
-      <div class="panelHeader">
-        <h2>Médecins (pool)</h2>
-        <input id="search" class="search" placeholder="Rechercher un médecin…" />
+  <main class="main">
+    <section class="left">
+      <div class="roomsGrid" id="roomsGrid"></div>
+
+      <div class="sectionTitle">Interventions</div>
+      <div class="interventionsRow" id="interventionsRow"></div>
+
+      <div class="footerHint" id="footerHint">
+        Connecté — Astuces : glissez-déposez une carte sur n'importe quelle zone. Double-cliquez une carte pour la renvoyer rapidement.
+        Utilisez le bouton sur la carte pour basculer « En service / Hors-service ».
       </div>
-      <div id="pool" class="list droppable" data-room="__POOL__"></div>
-      <div class="hint">Astuce : dépose un médecin ici pour le “retirer” d’une salle.</div>
     </section>
 
-    <section class="board">
-      <div id="rooms" class="rooms"></div>
-    </section>
+    <aside class="right">
+      <div class="rightCols">
+        <div class="miniCol">
+          <div class="colTitle">Réserve</div>
+          <div class="pillZone droppable" data-zone="reserve">
+            <div class="pillZoneHeader">
+              <span>Réserve</span>
+              <span class="count" id="countReserve">0 médecin</span>
+            </div>
+            <div class="dropBody" id="reserveList"></div>
+          </div>
+        </div>
+
+        <div class="miniCol">
+          <div class="colTitle">Hors service</div>
+          <div class="panel">
+            <div class="panelHeader">
+              <span>Hors service</span>
+              <span class="count" id="countHors">0 médecins</span>
+            </div>
+            <div class="scroll" id="horsList"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
   </main>
-
-  <dialog id="modal">
-    <form method="dialog" class="modal">
-      <h3 id="modalTitle">JSON</h3>
-      <textarea id="modalText" spellcheck="false"></textarea>
-      <div class="modalActions">
-        <button id="modalCancel" class="btn ghost" value="cancel">Annuler</button>
-        <button id="modalOk" class="btn" value="ok">OK</button>
-      </div>
-      <p class="modalHint">Export : copie/colle. Import : colle un JSON valide.</p>
-    </form>
-  </dialog>
 
   <script src="app.js"></script>
 </body>
