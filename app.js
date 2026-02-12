@@ -1,32 +1,36 @@
-const STORAGE_KEY = "dispatch_sams_v3_state";
-const DOCTORS_KEY = "dispatch_sams_v3_doctors";
-const elBossCard = document.getElementById("bossCard");
-const bossSelect = document.getElementById("bossSelect");
-const bossDisplay = document.getElementById("bossDisplay");
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "https://myymgkdlndiieipqakrs.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15eW1na2RsbmRpaWVpcHFha3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4ODcwMTgsImV4cCI6MjA4NjQ2MzAxOH0.4HLTHvfpLC_mnIts4-QVRPYDgg3wY219B0SVKbIto6o"
+);
+let elBossCard;
+let bossSelect;
+let bossDisplay;
 
 
 
 let cfg = null;
 let state = null;
 
-const elTitle = document.getElementById("appTitle");
-const elTabs = document.getElementById("tabs");
-const elRoomsGrid = document.getElementById("roomsGrid");
-const elInterventionsRow = document.getElementById("interventionsRow");
+let elTitle;
+let elTabs;
+let elRoomsGrid;
+let elInterventionsRow;
 
-const elReserveList = document.getElementById("reserveList");
-const elHorsList = document.getElementById("horsList");
-const elCountReserve = document.getElementById("countReserve");
-const elCountHors = document.getElementById("countHors");
+let elReserveList;
+let elHorsList;
+let elCountReserve;
+let elCountHors;
 
-const btnAllReserve = document.getElementById("btnAllReserve");
-const btnManage = document.getElementById("btnManage");
+let btnAllReserve;
+let btnManage;
 
 // Détails
-const elDetailsTitle = document.getElementById("detailsTitle");
-const elDetailsSub = document.getElementById("detailsSub");
-const elDetailsCount = document.getElementById("detailsCount");
-const elDetailsList = document.getElementById("detailsList");
+let elDetailsTitle;
+let elDetailsSub;
+let elDetailsCount;
+let elDetailsList;
 
 const STATE_ROW_ID = "main";
 const TB_DOCTORS = "dispatch_doctors";
@@ -34,27 +38,62 @@ const TB_STATE = "dispatch_state";
 
 
 // CRUD modal
-const dlg = document.getElementById("crud");
-const crudList = document.getElementById("crudList");
-const fId = document.getElementById("fId");
-const fName = document.getElementById("fName");
-const fRole = document.getElementById("fRole");
-const fPhone = document.getElementById("fPhone");
-const fBucket = document.getElementById("fBucket");
-const btnNew = document.getElementById("btnNew");
-const btnSave = document.getElementById("btnSave");
-const btnDelete = document.getElementById("btnDelete");
+let dlg;
+let crudList;
+let fId;
+let fName;
+let fRole;
+let fPhone;
+let fBucket;
+let btnNew;
+let btnSave;
+let btnDelete;
 
 let selectedZoneId = null;
 let selectedDoctorId = null;
 
-init();
+window.addEventListener("DOMContentLoaded", () => {
+  init();
+});
+
 
 async function init(){
-  if(!window.supabase){
-    console.error("Supabase client introuvable. As-tu ajouté le script module dans index.html ?");
-    return;
-  }
+
+elBossCard = document.getElementById("bossCard");
+bossSelect = document.getElementById("bossSelect");
+bossDisplay = document.getElementById("bossDisplay");
+
+
+elTitle = document.getElementById("appTitle");
+elTabs = document.getElementById("tabs");
+elRoomsGrid = document.getElementById("roomsGrid");
+elInterventionsRow = document.getElementById("interventionsRow");
+
+elReserveList = document.getElementById("reserveList");
+elHorsList = document.getElementById("horsList");
+elCountReserve = document.getElementById("countReserve");
+elCountHors = document.getElementById("countHors");
+
+btnAllReserve = document.getElementById("btnAllReserve");
+btnManage = document.getElementById("btnManage");
+
+// Détails
+elDetailsTitle = document.getElementById("detailsTitle");
+elDetailsSub = document.getElementById("detailsSub");
+elDetailsCount = document.getElementById("detailsCount");
+elDetailsList = document.getElementById("detailsList");
+
+// CRUD modal
+dlg = document.getElementById("crud");
+crudList = document.getElementById("crudList");
+fId = document.getElementById("fId");
+fName = document.getElementById("fName");
+fRole = document.getElementById("fRole");
+fPhone = document.getElementById("fPhone");
+fBucket = document.getElementById("fBucket");
+btnNew = document.getElementById("btnNew");
+btnSave = document.getElementById("btnSave");
+btnDelete = document.getElementById("btnDelete");
 
   cfg = await fetch("./config.json", { cache: "no-store" }).then(r => r.json());
 
