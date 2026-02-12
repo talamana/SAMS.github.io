@@ -425,28 +425,28 @@ function makeDroppable(el, zoneId){
   el.addEventListener("drop", (e) => {
     e.preventDefault();
     el.classList.remove("dragOver");
+
     const docId = e.dataTransfer.getData("text/plain");
     if(!docId) return;
 
     let targetZone = zoneId;
 
-    // si on drop dans la liste Détails, on drop dans la zone sélectionnée
+    // Drop depuis le panneau Détails => dans la zone sélectionnée
     if(targetZone === "__DETAILS_DROP__"){
       targetZone = selectedZoneId || "reserve";
     }
 
-    // Interdiction optionnelle: un doc "hors" reste hors si tu veux (commente si tu veux autoriser)
-    // if (isHorsZone(state.placements[docId]) && !isHorsZone(targetZone)) return;
-
+    // Update state
     state.placements[docId] = targetZone;
 
-    // ✅ Après le drop, on “focus” la zone => tu vois le doc dedans
-    setSelectedZone(targetZone);
-
+    // Persist
     saveState();
-    ll();
+
+    // ✅ IMPORTANT : re-render immédiat (sinon tu dois F5)
+    renderAll();
   });
 }
+
 
 
 function countInZone(zoneId){
