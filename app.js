@@ -28,6 +28,11 @@ const elDetailsSub = document.getElementById("detailsSub");
 const elDetailsCount = document.getElementById("detailsCount");
 const elDetailsList = document.getElementById("detailsList");
 
+const STATE_ROW_ID = "main";
+const TB_DOCTORS = "dispatch_doctors";
+const TB_STATE = "dispatch_state";
+
+
 // CRUD modal
 const dlg = document.getElementById("crud");
 const crudList = document.getElementById("crudList");
@@ -46,22 +51,106 @@ let selectedDoctorId = null;
 init();
 
 async function init(){
-  cfg = await fetch("./config.json", {cache:"no-store"}).then(r => r.json());
+  if(!window.supabase){
+    console.error("Supabase client introuvable. As-tu ajouté le script module dans index.html ?");
+    return;
+  }
 
-  // doctors: source = localStorage si présent, sinon config.json
-  cfg.doctors = loadDoctors() ?? (cfg.doctors ?? []);
-  if(!loadDoctors()) saveDoctors(cfg.doctors);
+  cfg = await fetch("./config.json", { cache: "no-store" }).then(r => r.json());
 
+  // 1) doctors (DB -> UI)
+  cfg.doctors = await dbLoadDoctors();
+
+  // 2) state (DB -> UI) ; si pas existant, on initialise
+  state = await dbLoadStateOrCreate(cfg);
+
+  // 3) render
   elTitle.textContent = cfg.appTitle || "Dispatch SAMS";
-  state = loadState() ?? makeInitialState(cfg);
-
   renderTabs();
   renderAll();
-  renderBossSelect();
-wireBossSelect();
   wireGlobalDroppables();
   wireButtons();
+  renderBossSelect();
+  wireBossSelect();
+
+  // 4) realtime (multi-user)
+  startRealtime();
 }
+async function dbLoadDoctors(){
+  const { data, error } = await supabase
+    .from(TB_DOCTORS)
+    .select("id,name,role,phone,bucket")
+    .order("role", { ascending: true })
+    .order("name", { ascending: true });
+
+  if(error){
+    console.error("dbLoadDoctors error:", error);
+    return []; // fallback
+  }
+  return data || [];
+}
+async function dbLoadStateOrCreate(cfg){
+  // tente de charger
+  const { data, error } = await supabase
+    .from(TB_STATE)
+    .select("id,active_site_id,boss_doctor_id,placements")
+    .eq("id", STATE_ROW_ID)
+    .maybeSingle();
+
+  if(error){
+    console.error("dbLoadStateOrCreate load error:", error);
+  }
+
+  // si existe
+  if(data?.placements){
+    return {
+      activeSiteId: data.active_site_id || (cfg.sites?.[0]?.id ?? "sud"),
+      placements: data.placements || {},
+      dispatchBossId: data.boss_doctor_id || null
+    };
+  }
+
+  // sinon créer un état initial (ex: tout "hors" si bucket=hors)
+  const initial = makeInitialState(cfg);
+  // makeInitialState renvoie { activeSiteId, placements } ; on ajoute boss
+  const newState = {
+    activeSiteId: initial.activeSiteId,
+    placements: initial.placements,
+    dispatchBossId: null
+  };
+
+  const { error: insErr } = await supabase
+    .from(TB_STATE)
+    .insert([{
+      id: STATE_ROW_ID,
+      active_site_id: newState.activeSiteId,
+      boss_doctor_id: null,
+      placements: newState.placements
+    }]);
+
+  if(insErr){
+    console.error("dbLoadStateOrCreate insert error:", insErr);
+  }
+
+  return newState;
+}
+async function saveState(){
+  const payload = {
+    active_site_id: state.activeSiteId,
+    boss_doctor_id: state.dispatchBossId || null,
+    placements: state.placements
+  };
+
+  const { error } = await supabase
+    .from(TB_STATE)
+    .update(payload)
+    .eq("id", STATE_ROW_ID);
+
+  if(error){
+    console.error("saveState error:", error);
+  }
+}
+
 
 function makeInitialState(cfg){
   const placements = {};
@@ -139,46 +228,48 @@ function wireButtons(){
     fId.focus();
   });
 
-  btnSave.addEventListener("click", (e) => {
-    e.preventDefault();
-    const doc = readForm();
-    if(!doc) return;
+  btnSave.addEventListener("click", async (e) => {
+  e.preventDefault();
+  const doc = readForm();
+  if(!doc) return;
 
-    const idx = cfg.doctors.findIndex(x => x.id === doc.id);
-    if(idx >= 0){
-      cfg.doctors[idx] = doc;
-    }else{
-      cfg.doctors.push(doc);
-      // placement initial
-      state.placements[doc.id] = doc.bucket === "hors" ? "hors" : "reserve";
+  // bucket dans DB
+  const ok = await dbUpsertDoctor(doc);
+  if(!ok) return;
+
+  // refresh doctors
+  await refreshDoctorsFromDb();
+
+  // placement si nouveau ou changement bucket
+  if(!state.placements[doc.id]){
+    state.placements[doc.id] = (doc.bucket === "hors") ? "hors" : "reserve";
+    saveState(); // async
+  } else {
+    // si bucket=hors => on le met hors, sinon on ne force pas (à toi de choisir)
+    if(doc.bucket === "hors") {
+      state.placements[doc.id] = "hors";
+      saveState();
+      renderAll();
     }
+  }
+});
 
-    // si on a changé le bucket d'un doc existant
-    state.placements[doc.id] = doc.bucket === "hors" ? "hors" : (state.placements[doc.id] === "hors" ? "reserve" : state.placements[doc.id] || "reserve");
 
-    saveDoctors(cfg.doctors);
-    saveState();
-    renderCrudList();
-    renderAll();
-  });
+  btnDelete.addEventListener("click", async (e) => {
+  e.preventDefault();
+  const id = (fId.value || "").trim();
+  if(!id) return;
 
-  btnDelete.addEventListener("click", (e) => {
-    e.preventDefault();
-    const id = (fId.value || "").trim();
-    if(!id) return;
+  const ok = await dbDeleteDoctor(id);
+  if(!ok) return;
 
-    cfg.doctors = cfg.doctors.filter(d => d.id !== id);
-    delete state.placements[id];
+  delete state.placements[id];
+  saveState();
 
-    saveDoctors(cfg.doctors);
-    saveState();
+  await refreshDoctorsFromDb();
+  clearForm();
+});
 
-    selectedDoctorId = null;
-    clearForm();
-    renderCrudList();
-    renderAll();
-  });
-}
 
 function wireGlobalDroppables(){
   document.querySelectorAll(".droppable").forEach(el => makeDroppable(el, el.dataset.zone));
@@ -417,6 +508,16 @@ function makeIcon(txt){
   return el;
 }
 
+let saveTimer = null;
+
+function scheduleSaveState(){
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveState(); // async fire-and-forget
+    saveTimer = null;
+  }, 120); // 120ms = fluide + évite spam DB
+}
+
 function makeDroppable(el, zoneId){
   if(!el) return;
 
@@ -442,18 +543,17 @@ function makeDroppable(el, zoneId){
       targetZone = selectedZoneId || "reserve";
     }
 
-    // Update state
+    // ✅ si rien ne change, on ne spam pas
+    if(state.placements[docId] === targetZone) return;
+
+    // Update state (UI instant)
     state.placements[docId] = targetZone;
-
-    // Persist
-    saveState();
-
-    // ✅ IMPORTANT : re-render immédiat (sinon tu dois F5)
     renderAll();
+
+    // Persist (DB) - debounced
+    scheduleSaveState();
   });
 }
-
-
 
 function countInZone(zoneId){
   return cfg.doctors.reduce((acc, d) => acc + ((state.placements[d.id] === zoneId) ? 1 : 0), 0);
@@ -609,4 +709,69 @@ function renderBossDisplay(){
   bossDisplay.textContent = d ? d.name : "Responsable inconnu";
 }
 
+let realtimeChannel = null;
 
+function startRealtime(){
+  if(realtimeChannel) return;
+
+  realtimeChannel = supabase
+    .channel("dispatch_live")
+    .on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: TB_STATE, filter: `id=eq.${STATE_ROW_ID}` },
+      (payload) => {
+        const st = payload.new;
+
+        // évite de planter si st incomplet
+        if(!st) return;
+
+        state.activeSiteId = st.active_site_id || state.activeSiteId;
+        state.dispatchBossId = st.boss_doctor_id || null;
+        state.placements = st.placements || state.placements;
+
+        renderTabs();
+        renderAll();
+        renderBossSelect(); // pour mettre à jour le select si boss change
+      }
+    )
+    .subscribe((status) => {
+      // optionnel
+      // console.log("realtime status:", status);
+    });
+}
+async function dbUpsertDoctor(doc){
+  const { error } = await supabase
+    .from(TB_DOCTORS)
+    .upsert([doc], { onConflict: "id" });
+
+  if(error){
+    console.error("dbUpsertDoctor error:", error);
+    return false;
+  }
+  return true;
+}
+
+async function dbDeleteDoctor(id){
+  const { error } = await supabase
+    .from(TB_DOCTORS)
+    .delete()
+    .eq("id", id);
+
+  if(error){
+    console.error("dbDeleteDoctor error:", error);
+    return false;
+  }
+  return true;
+}
+async function refreshDoctorsFromDb(){
+  cfg.doctors = await dbLoadDoctors();
+
+  // nettoyer placements d'IDs qui n'existent plus
+  const ids = new Set(cfg.doctors.map(d => d.id));
+  for(const k of Object.keys(state.placements || {})){
+    if(!ids.has(k)) delete state.placements[k];
+  }
+
+  renderAll();
+  renderBossSelect();
+}
