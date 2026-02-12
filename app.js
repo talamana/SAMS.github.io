@@ -1,4 +1,5 @@
-const STORAGE_KEY = "dispatch_sams_like_ui_v1";
+const STORAGE_KEY = "dispatch_sams_v3_state";
+const DOCTORS_KEY = "dispatch_sams_v3_doctors";
 
 let cfg = null;
 let state = null;
@@ -14,39 +15,57 @@ const elCountReserve = document.getElementById("countReserve");
 const elCountHors = document.getElementById("countHors");
 
 const btnAllReserve = document.getElementById("btnAllReserve");
+const btnManage = document.getElementById("btnManage");
+
+// Détails
+const elDetailsTitle = document.getElementById("detailsTitle");
+const elDetailsSub = document.getElementById("detailsSub");
+const elDetailsCount = document.getElementById("detailsCount");
+const elDetailsList = document.getElementById("detailsList");
+
+// CRUD modal
+const dlg = document.getElementById("crud");
+const crudList = document.getElementById("crudList");
+const fId = document.getElementById("fId");
+const fName = document.getElementById("fName");
+const fRole = document.getElementById("fRole");
+const fPhone = document.getElementById("fPhone");
+const fBucket = document.getElementById("fBucket");
+const btnNew = document.getElementById("btnNew");
+const btnSave = document.getElementById("btnSave");
+const btnDelete = document.getElementById("btnDelete");
+
+let selectedZoneId = null;
+let selectedDoctorId = null;
 
 init();
 
 async function init(){
   cfg = await fetch("./config.json", {cache:"no-store"}).then(r => r.json());
-  elTitle.textContent = cfg.appTitle || "Dispatch";
 
+  // doctors: source = localStorage si présent, sinon config.json
+  cfg.doctors = loadDoctors() ?? (cfg.doctors ?? []);
+  if(!loadDoctors()) saveDoctors(cfg.doctors);
+
+  elTitle.textContent = cfg.appTitle || "Dispatch SAMS";
   state = loadState() ?? makeInitialState(cfg);
 
   renderTabs();
   renderAll();
-
-  // droppables (boss / reserve)
-  document.querySelectorAll(".droppable").forEach(el => makeDroppable(el, el.dataset.zone));
-
-  btnAllReserve.addEventListener("click", () => {
-    // renvoyer tout le monde en réserve (sauf hors-service: on les met aussi en réserve mais en gardant le flag service)
-    for (const id of Object.keys(state.placements)) state.placements[id] = "reserve";
-    saveState();
-    renderAll();
-  });
+  wireGlobalDroppables();
+  wireButtons();
 }
 
 function makeInitialState(cfg){
   const placements = {};
-  // par défaut : tout le monde en "hors" (liste) si service=hors, sinon "reserve"
   for(const d of cfg.doctors){
-    placements[d.id] = d.service === "hors" ? "hors" : "reserve";
+    // bucket initial depuis config : "hors" ou "reserve"
+    const bucket = (d.bucket || d.service || "reserve");
+    placements[d.id] = (bucket === "hors") ? "hors" : "reserve";
   }
   return {
     activeSiteId: cfg.sites?.[0]?.id ?? "sud",
-    placements,        // doctorId -> zoneId ("hors","reserve","boss", roomId, interventionId)
-    service: Object.fromEntries(cfg.doctors.map(d => [d.id, d.service || "en"])) // en|hors
+    placements // doctorId -> zoneId ("hors","reserve","boss", roomId, interventionId)
   };
 }
 
@@ -55,13 +74,98 @@ function loadState(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return null;
     const s = JSON.parse(raw);
-    if(!s?.placements || !s?.service) return null;
+    if(!s?.placements) return null;
     return s;
   }catch{ return null; }
 }
-
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadDoctors(){
+  try{
+    const raw = localStorage.getItem(DOCTORS_KEY);
+    if(!raw) return null;
+    const arr = JSON.parse(raw);
+    if(!Array.isArray(arr)) return null;
+    return arr;
+  }catch{ return null; }
+}
+function saveDoctors(arr){
+  localStorage.setItem(DOCTORS_KEY, JSON.stringify(arr));
+}
+
+function wireButtons(){
+  btnAllReserve.addEventListener("click", () => {
+    // IMPORTANT : on renvoie vers réserve uniquement ceux qui ne sont PAS hors service
+    for(const d of cfg.doctors){
+      const z = state.placements[d.id];
+      if(z && z !== "hors"){
+        state.placements[d.id] = "reserve";
+      }
+    }
+    saveState();
+    renderAll();
+  });
+
+  btnManage.addEventListener("click", () => {
+    selectedDoctorId = null;
+    renderCrudList();
+    clearForm();
+    dlg.showModal();
+  });
+
+  btnNew.addEventListener("click", (e) => {
+    e.preventDefault();
+    selectedDoctorId = null;
+    clearForm();
+    fId.focus();
+  });
+
+  btnSave.addEventListener("click", (e) => {
+    e.preventDefault();
+    const doc = readForm();
+    if(!doc) return;
+
+    const idx = cfg.doctors.findIndex(x => x.id === doc.id);
+    if(idx >= 0){
+      cfg.doctors[idx] = doc;
+    }else{
+      cfg.doctors.push(doc);
+      // placement initial
+      state.placements[doc.id] = doc.bucket === "hors" ? "hors" : "reserve";
+    }
+
+    // si on a changé le bucket d'un doc existant
+    state.placements[doc.id] = doc.bucket === "hors" ? "hors" : (state.placements[doc.id] === "hors" ? "reserve" : state.placements[doc.id] || "reserve");
+
+    saveDoctors(cfg.doctors);
+    saveState();
+    renderCrudList();
+    renderAll();
+  });
+
+  btnDelete.addEventListener("click", (e) => {
+    e.preventDefault();
+    const id = (fId.value || "").trim();
+    if(!id) return;
+
+    cfg.doctors = cfg.doctors.filter(d => d.id !== id);
+    delete state.placements[id];
+
+    saveDoctors(cfg.doctors);
+    saveState();
+
+    selectedDoctorId = null;
+    clearForm();
+    renderCrudList();
+    renderAll();
+  });
+}
+
+function wireGlobalDroppables(){
+  document.querySelectorAll(".droppable").forEach(el => makeDroppable(el, el.dataset.zone));
+  makeDroppable(elDetailsList, "__DETAILS_DROP__");
 }
 
 function renderTabs(){
@@ -84,11 +188,11 @@ function renderAll(){
   renderRooms();
   renderInterventions();
   renderRightPanels();
+  renderDetails();
 }
 
 function renderRooms(){
   elRoomsGrid.innerHTML = "";
-
   const site = cfg.sites.find(s => s.id === state.activeSiteId);
   const rooms = site?.rooms ?? [];
 
@@ -96,6 +200,11 @@ function renderRooms(){
     const pill = document.createElement("div");
     pill.className = `roomPill droppable pill-${r.color || "blue"}`;
     pill.dataset.zone = r.id;
+
+    pill.addEventListener("click", () => {
+      selectedZoneId = r.id;
+      renderDetails();
+    });
 
     const left = document.createElement("div");
     left.textContent = r.label;
@@ -114,11 +223,15 @@ function renderRooms(){
 
 function renderInterventions(){
   elInterventionsRow.innerHTML = "";
-
-  for(const it of cfg.interventions){
+  for(const it of (cfg.interventions ?? [])){
     const pill = document.createElement("div");
     pill.className = `roomPill droppable pill-pink`;
     pill.dataset.zone = it.id;
+
+    pill.addEventListener("click", () => {
+      selectedZoneId = it.id;
+      renderDetails();
+    });
 
     const left = document.createElement("div");
     left.textContent = it.label;
@@ -136,23 +249,48 @@ function renderInterventions(){
 }
 
 function renderRightPanels(){
-  // Réserve: on affiche les cartes si elles sont placées en réserve
+  // Réserve
   elReserveList.innerHTML = "";
   const reserveDocs = cfg.doctors.filter(d => state.placements[d.id] === "reserve");
   elCountReserve.textContent = formatCount(reserveDocs.length, "médecin");
 
-  for(const d of reserveDocs){
-    elReserveList.appendChild(makeDoctorCard(d));
-  }
+  // clique réserve -> détails
+  document.querySelector('[data-zone="reserve"]')?.addEventListener("click", () => {
+    selectedZoneId = "reserve";
+    renderDetails();
+  });
 
-  // Hors-service: cartes scroll
+  for(const d of reserveDocs) elReserveList.appendChild(makeDoctorCard(d));
+
+  // Hors service
   elHorsList.innerHTML = "";
   const horsDocs = cfg.doctors.filter(d => state.placements[d.id] === "hors");
   elCountHors.textContent = formatCount(horsDocs.length, "médecin");
 
-  for(const d of horsDocs){
-    elHorsList.appendChild(makeDoctorCard(d));
+  // clique hors -> détails
+  document.querySelector('[data-zone="hors"]')?.addEventListener("click", () => {
+    selectedZoneId = "hors";
+    renderDetails();
+  });
+
+  for(const d of horsDocs) elHorsList.appendChild(makeDoctorCard(d));
+}
+
+function renderDetails(){
+  // zone par défaut
+  if(!selectedZoneId) {
+    selectedZoneId = "reserve";
   }
+
+  const zoneName = getZoneLabel(selectedZoneId);
+  elDetailsTitle.textContent = zoneName;
+  elDetailsSub.textContent = "Médecins dans cette zone (glisser-déposer possible ici)";
+  elDetailsList.dataset.zone = selectedZoneId; // drop direct dans la zone sélectionnée
+
+  const docs = getDoctorsInZone(selectedZoneId);
+  elDetailsCount.textContent = String(docs.length);
+  elDetailsList.innerHTML = "";
+  for(const d of docs) elDetailsList.appendChild(makeDoctorCard(d));
 }
 
 function makeDoctorCard(d){
@@ -168,12 +306,11 @@ function makeDoctorCard(d){
 
   // double-clic => réserve
   card.addEventListener("dblclick", () => {
-    state.placements[d.id] = "reserve";
-    saveState();
-    renderAll();
-    // on re-render les compteurs à gauche
-    renderRooms();
-    renderInterventions();
+    if(state.placements[d.id] !== "hors"){
+      state.placements[d.id] = "reserve";
+      saveState();
+      renderAll();
+    }
   });
 
   const top = document.createElement("div");
@@ -193,18 +330,10 @@ function makeDoctorCard(d){
 
   const badges = document.createElement("div");
   badges.className = "badges";
-
   const role = document.createElement("div");
-  role.className = "badge " + roleBadgeClass(d.role);
+  role.className = "badge b-yellow";
   role.textContent = d.role || "—";
-
-  const serviceBadge = document.createElement("div");
-  const isEn = (state.service[d.id] ?? "en") === "en";
-  serviceBadge.className = "badge " + (isEn ? "b-green" : "b-pink");
-  serviceBadge.textContent = isEn ? "En service" : "Hors-service";
-
   badges.appendChild(role);
-  badges.appendChild(serviceBadge);
 
   top.appendChild(left);
   top.appendChild(badges);
@@ -215,22 +344,22 @@ function makeDoctorCard(d){
   const icons = document.createElement("div");
   icons.className = "iconRow";
   icons.appendChild(makeIcon("🩺"));
-  icons.appendChild(makeIcon("🩻"));
   icons.appendChild(makeIcon("🧾"));
+  icons.appendChild(makeIcon("📍"));
 
-  const toggle = document.createElement("button");
-  toggle.className = "toggle " + (isEn ? "en" : "hors");
-  toggle.textContent = isEn ? "En service" : "Hors-service";
-  toggle.addEventListener("click", (e) => {
+  actions.appendChild(icons);
+
+  // petit bouton “mettre hors service” optionnel via CRUD (sinon tu peux enlever)
+  const mini = document.createElement("button");
+  mini.className = "btnLite";
+  mini.textContent = (state.placements[d.id] === "hors") ? "Mettre en Réserve" : "Mettre Hors service";
+  mini.addEventListener("click", (e) => {
     e.stopPropagation();
-    const nowEn = (state.service[d.id] ?? "en") !== "en";
-    state.service[d.id] = nowEn ? "en" : "hors";
+    state.placements[d.id] = (state.placements[d.id] === "hors") ? "reserve" : "hors";
     saveState();
     renderAll();
   });
-
-  actions.appendChild(icons);
-  actions.appendChild(toggle);
+  actions.appendChild(mini);
 
   card.appendChild(top);
   card.appendChild(actions);
@@ -245,34 +374,33 @@ function makeIcon(txt){
   return el;
 }
 
-function roleBadgeClass(role){
-  const r = (role || "").toLowerCase();
-  if(r.includes("direct")) return "b-red";
-  if(r.includes("chef")) return "b-yellow";
-  if(r.includes("adj")) return "b-pink";
-  return "b-yellow";
-}
-
 function makeDroppable(el, zoneId){
+  if(!el) return;
+
   el.addEventListener("dragover", (e) => {
     e.preventDefault();
     el.classList.add("dragOver");
     e.dataTransfer.dropEffect = "move";
   });
+
   el.addEventListener("dragleave", () => el.classList.remove("dragOver"));
+
   el.addEventListener("drop", (e) => {
     e.preventDefault();
     el.classList.remove("dragOver");
     const docId = e.dataTransfer.getData("text/plain");
     if(!docId) return;
 
+    // si doc est hors service et tu le drop ailleurs, on autorise (sinon tu peux bloquer)
     state.placements[docId] = zoneId;
-    saveState();
 
-    // maj UI
+    // si on drop dans une zone de détails, c’est la zone sélectionnée
+    if(zoneId === "__DETAILS_DROP__"){
+      state.placements[docId] = selectedZoneId;
+    }
+
+    saveState();
     renderAll();
-    renderRooms();
-    renderInterventions();
   });
 }
 
@@ -280,6 +408,82 @@ function countInZone(zoneId){
   return cfg.doctors.reduce((acc, d) => acc + ((state.placements[d.id] === zoneId) ? 1 : 0), 0);
 }
 
+function getDoctorsInZone(zoneId){
+  return cfg.doctors.filter(d => state.placements[d.id] === zoneId);
+}
+
 function formatCount(n, word){
   return `${n} ${word}${n > 1 ? "s" : ""}`;
+}
+
+function getZoneLabel(zoneId){
+  if(zoneId === "reserve") return "Réserve";
+  if(zoneId === "hors") return "Hors service";
+  if(zoneId === "boss") return "Responsable du dispatch";
+
+  for(const s of (cfg.sites ?? [])){
+    const r = (s.rooms ?? []).find(x => x.id === zoneId);
+    if(r) return r.label;
+  }
+  const it = (cfg.interventions ?? []).find(x => x.id === zoneId);
+  if(it) return it.label;
+
+  return zoneId;
+}
+
+/* CRUD */
+function renderCrudList(){
+  crudList.innerHTML = "";
+  for(const d of cfg.doctors){
+    const item = document.createElement("div");
+    item.className = "crudItem" + (d.id === selectedDoctorId ? " active" : "");
+    item.innerHTML = `<strong>${escapeHtml(d.name || d.id)}</strong>
+      <small>${escapeHtml(d.role || "—")} • ${escapeHtml(d.phone || "—")}</small>`;
+    item.addEventListener("click", () => {
+      selectedDoctorId = d.id;
+      fillForm(d);
+      renderCrudList();
+    });
+    crudList.appendChild(item);
+  }
+}
+
+function clearForm(){
+  fId.value = "";
+  fName.value = "";
+  fRole.value = "";
+  fPhone.value = "";
+  fBucket.value = "reserve";
+}
+
+function fillForm(d){
+  fId.value = d.id || "";
+  fName.value = d.name || "";
+  fRole.value = d.role || "";
+  fPhone.value = d.phone || "";
+  // bucket = où il se trouve maintenant (reserve/hors)
+  const z = state.placements[d.id];
+  fBucket.value = (z === "hors") ? "hors" : "reserve";
+}
+
+function readForm(){
+  const id = (fId.value || "").trim();
+  const name = (fName.value || "").trim();
+  if(!id || !name){
+    alert("Id et Nom sont obligatoires.");
+    return null;
+  }
+  return {
+    id,
+    name,
+    role: (fRole.value || "").trim(),
+    phone: (fPhone.value || "").trim(),
+    bucket: fBucket.value // reserve|hors
+  };
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
 }
