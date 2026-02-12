@@ -1,22 +1,47 @@
 {
   "appTitle": "Dispatch SAMS",
-  "rooms": [
-    { "id": "triage", "name": "Triage" },
-    { "id": "dechoc", "name": "Déchoc" },
-    { "id": "salle1", "name": "Salle 1" },
-    { "id": "salle2", "name": "Salle 2" },
-    { "id": "radio", "name": "Imagerie" }
+  "sites": [
+    {
+      "id": "sud",
+      "name": "Hôpital Sud",
+      "rooms": [
+        {"id":"sud_bloc1","label":"Hôpital Sud — Bloc 1","color":"blue"},
+        {"id":"sud_bloc2","label":"Hôpital Sud — Bloc 2","color":"blue"},
+        {"id":"sud_bloc3","label":"Hôpital Sud — Bloc 3","color":"blue"},
+        {"id":"sud_irm","label":"Hôpital Sud — IRM","color":"yellow"},
+        {"id":"sud_radio","label":"Hôpital Sud — Radio","color":"yellow"},
+        {"id":"sud_trait","label":"Hôpital Sud — Traitement","color":"green"},
+        {"id":"sud_372","label":"Hôpital Sud — 372 (examen)","color":"green"},
+        {"id":"sud_373","label":"Hôpital Sud — 373 (examen)","color":"green"},
+        {"id":"sud_370","label":"Hôpital Sud — 370 (chambre)","color":"purple"},
+        {"id":"sud_369","label":"Hôpital Sud — 369 (chambre)","color":"purple"},
+        {"id":"sud_371","label":"Hôpital Sud — 371 (chambre)","color":"purple"},
+        {"id":"sud_374","label":"Hôpital Sud — 374 (chambre)","color":"purple"}
+      ]
+    },
+    {
+      "id": "nord",
+      "name": "Clinique Nord",
+      "rooms": [
+        {"id":"nord_bloc1","label":"Clinique Nord — Bloc 1","color":"blue"},
+        {"id":"nord_bloc2","label":"Clinique Nord — Bloc 2","color":"blue"},
+        {"id":"nord_irm","label":"Clinique Nord — IRM","color":"yellow"},
+        {"id":"nord_radio","label":"Clinique Nord — Radio","color":"yellow"},
+        {"id":"nord_exam1","label":"Clinique Nord — Examen 1","color":"green"},
+        {"id":"nord_exam2","label":"Clinique Nord — Examen 2","color":"green"}
+      ]
+    }
+  ],
+  "interventions": [
+    {"id":"int1","label":"Intervention 1"},
+    {"id":"int2","label":"Intervention 2"},
+    {"id":"int3","label":"Intervention 3"},
+    {"id":"int4","label":"Intervention 4"}
   ],
   "doctors": [
-    { "id": "miles", "name": "Dr Miles Carver", "role": "Urgences" },
-    { "id": "mei", "name": "Dr Mei Everly", "role": "Chirurgie" },
-    { "id": "marion", "name": "Dr Marion Kali", "role": "Anesthésie" }
-  ],
-  "assignments": {
-    "triage": ["miles"],
-    "dechoc": ["marion"],
-    "salle1": ["mei"],
-    "salle2": [],
-    "radio": []
-  }
+    {"id":"abigael","name":"Abigael Swaguer","role":"Directrice","phone":"555-2631","service":"hors"},
+    {"id":"cassiopee","name":"Cassiopée Hellkaros","role":"Adjoint","phone":"555-4070","service":"en"},
+    {"id":"ailean","name":"Ailean H. McGregor","role":"Adjoint","phone":"555-5649","service":"en"},
+    {"id":"sophie","name":"Sophie Carter","role":"Chef de service","phone":"555-7145","service":"en"}
+  ]
 }
