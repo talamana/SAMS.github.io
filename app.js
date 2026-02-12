@@ -487,3 +487,13 @@ function escapeHtml(s){
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[m]));
 }
+function isHorsZone(z){
+  // robuste même si l’ancien code a écrit autre chose
+  return (z || "").toLowerCase().includes("hors");
+}
+
+function setSelectedZone(zoneId){
+  selectedZoneId = zoneId;
+  renderDetails();
+}
+
