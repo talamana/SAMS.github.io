@@ -1,5 +1,7 @@
 const STORAGE_KEY = "dispatch_sams_v3_state";
 const DOCTORS_KEY = "dispatch_sams_v3_doctors";
+const elBossCard = document.getElementById("bossCard");
+
 
 let cfg = null;
 let state = null;
@@ -51,7 +53,7 @@ async function init(){
   state = loadState() ?? makeInitialState(cfg);
 
   renderTabs();
-  renderAll();
+  ll();
   wireGlobalDroppables();
   wireButtons();
 }
@@ -192,65 +194,137 @@ function renderAll(){
   renderInterventions();
   renderRightPanels();
   renderDetails();
+  renderBoss();
 }
 
 function renderRooms(){
   elRoomsGrid.innerHTML = "";
-  const site = cfg.sites.find(s => s.id === state.activeSiteId);
-  const rooms = site?.rooms ?? [];
+
+  const site = (cfg.sites || []).find(s => s.id === state.activeSiteId);
+  const rooms = site?.rooms || [];
 
   for(const r of rooms){
+    const zoneId = r.id;
+
+    // Wrapper de zone (même classe qu'avant pour garder le style)
     const pill = document.createElement("div");
     pill.className = `roomPill droppable pill-${r.color || "blue"}`;
-    pill.dataset.zone = r.id;
+    pill.dataset.zone = zoneId;
 
+    // Récupère les docs dans cette zone
+    const docs = getDoctorsInZone(zoneId);
+
+    // HEADER (titre + compteur)
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+
+    const title = document.createElement("div");
+    title.textContent = r.label;
+
+    const count = document.createElement("div");
+    count.className = "small";
+    count.textContent = `${docs.length} médecin${docs.length > 1 ? "s" : ""}`;
+
+    header.appendChild(title);
+    header.appendChild(count);
+
+    // BODY (cartes des médecins)
+    const body = document.createElement("div");
+    body.className = "zoneBody";
+
+    if(docs.length === 0){
+      // Optionnel : placeholder léger
+      const empty = document.createElement("div");
+      empty.className = "small";
+      empty.style.opacity = "0.7";
+      empty.textContent = "—";
+      body.appendChild(empty);
+    }else{
+      for(const d of docs){
+        body.appendChild(makeDoctorCardCompact(d));
+      }
+    }
+
+    pill.appendChild(header);
+    pill.appendChild(body);
+
+    // Drag & Drop
+    makeDroppable(pill, zoneId);
+
+    // (Optionnel) clic = sélection (si tu gardes panneau Détails)
     pill.addEventListener("click", (e) => {
-  e.preventDefault();
-  setSelectedZone(r.id);  // (ou it.id dans interventions)
-});
+      e.preventDefault();
+      if(typeof setSelectedZone === "function") setSelectedZone(zoneId);
+    });
 
-
-    const left = document.createElement("div");
-    left.textContent = r.label;
-
-    const right = document.createElement("div");
-    right.className = "small";
-    right.textContent = `${countInZone(r.id)} médecin`;
-
-    pill.appendChild(left);
-    pill.appendChild(right);
-
-    makeDroppable(pill, r.id);
     elRoomsGrid.appendChild(pill);
   }
 }
 
+
 function renderInterventions(){
   elInterventionsRow.innerHTML = "";
-  for(const it of (cfg.interventions ?? [])){
-    const pill = document.createElement("div");
-    pill.className = `roomPill droppable pill-pink`;
-    pill.dataset.zone = it.id;
 
-    pill.addEventListener("click", () => {
-      selectedZoneId = it.id;
-      renderDetails();
+  const interventions = cfg.interventions || [];
+
+  for(const it of interventions){
+    const zoneId = it.id;
+
+    const pill = document.createElement("div");
+    pill.className = "roomPill droppable pill-pink";
+    pill.dataset.zone = zoneId;
+
+    const docs = getDoctorsInZone(zoneId);
+
+    // HEADER
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+
+    const title = document.createElement("div");
+    title.textContent = it.label;
+
+    const count = document.createElement("div");
+    count.className = "small";
+    count.textContent = `${docs.length} médecin${docs.length > 1 ? "s" : ""}`;
+
+    header.appendChild(title);
+    header.appendChild(count);
+
+    // BODY
+    const body = document.createElement("div");
+    body.className = "zoneBody";
+
+    if(docs.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "small";
+      empty.style.opacity = "0.7";
+      empty.textContent = "—";
+      body.appendChild(empty);
+    }else{
+      for(const d of docs){
+        body.appendChild(makeDoctorCardCompact(d));
+      }
+    }
+
+    pill.appendChild(header);
+    pill.appendChild(body);
+
+    makeDroppable(pill, zoneId);
+
+    // (Optionnel) clic = sélection (si tu gardes panneau Détails)
+    pill.addEventListener("click", (e) => {
+      e.preventDefault();
+      if(typeof setSelectedZone === "function") setSelectedZone(zoneId);
     });
 
-    const left = document.createElement("div");
-    left.textContent = it.label;
-
-    const right = document.createElement("div");
-    right.className = "small";
-    right.textContent = `${countInZone(it.id)} médecin`;
-
-    pill.appendChild(left);
-    pill.appendChild(right);
-
-    makeDroppable(pill, it.id);
     elInterventionsRow.appendChild(pill);
   }
 }
+
 
 function renderRightPanels(){
   // Réserve
@@ -313,7 +387,7 @@ function makeDoctorCard(d){
     if(!isHorsZone(state.placements[d.id])){
       state.placements[d.id] = "reserve";
       saveState();
-      renderAll();
+      ll();
       setSelectedZone("reserve");
     }
   });
@@ -390,7 +464,7 @@ function makeDroppable(el, zoneId){
     setSelectedZone(targetZone);
 
     saveState();
-    renderAll();
+    ll();
   });
 }
 
@@ -487,4 +561,22 @@ function setSelectedZone(zoneId){
   selectedZoneId = zoneId;
   renderDetails();
 }
+function renderBoss(){
+  if(!elBossCard) return;
+  elBossCard.innerHTML = "";
+
+  const bossDoc = cfg.doctors.find(d => state.placements[d.id] === "boss");
+  if(!bossDoc){
+    // rien → on laisse juste le hint
+    return;
+  }
+  // petite carte compacte
+  elBossCard.appendChild(makeDoctorCard(bossDoc));
+}
+function makeDoctorCardCompact(d){
+  const card = makeDoctorCard(d);
+  card.classList.add("compact");
+  return card;
+}
+
 
