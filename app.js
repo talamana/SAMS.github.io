@@ -97,16 +97,19 @@ function saveDoctors(arr){
 
 function wireButtons(){
   btnAllReserve.addEventListener("click", () => {
-    // IMPORTANT : on renvoie vers réserve uniquement ceux qui ne sont PAS hors service
-    for(const d of cfg.doctors){
-      const z = state.placements[d.id];
-      if(z && z !== "hors"){
-        state.placements[d.id] = "reserve";
-      }
-    }
-    saveState();
-    renderAll();
-  });
+  for(const d of cfg.doctors){
+    const z = state.placements[d.id];
+
+    // On NE touche JAMAIS ceux qui sont hors service (robuste)
+    if (isHorsZone(z)) continue;
+
+    // Tous les autres (salle/intervention/boss/réserve/undefined) -> réserve
+    state.placements[d.id] = "reserve";
+  }
+  saveState();
+  renderAll();
+});
+
 
   btnManage.addEventListener("click", () => {
     selectedDoctorId = null;
@@ -201,10 +204,11 @@ function renderRooms(){
     pill.className = `roomPill droppable pill-${r.color || "blue"}`;
     pill.dataset.zone = r.id;
 
-    pill.addEventListener("click", () => {
-      selectedZoneId = r.id;
-      renderDetails();
-    });
+    pill.addEventListener("click", (e) => {
+  e.preventDefault();
+  setSelectedZone(r.id);  // (ou it.id dans interventions)
+});
+
 
     const left = document.createElement("div");
     left.textContent = r.label;
@@ -304,12 +308,13 @@ function makeDoctorCard(d){
     e.dataTransfer.effectAllowed = "move";
   });
 
-  // double-clic => réserve
+  // double-clic => réserve (sauf hors service)
   card.addEventListener("dblclick", () => {
-    if(state.placements[d.id] !== "hors"){
+    if(!isHorsZone(state.placements[d.id])){
       state.placements[d.id] = "reserve";
       saveState();
       renderAll();
+      setSelectedZone("reserve");
     }
   });
 
@@ -330,42 +335,20 @@ function makeDoctorCard(d){
 
   const badges = document.createElement("div");
   badges.className = "badges";
+
   const role = document.createElement("div");
   role.className = "badge b-yellow";
   role.textContent = d.role || "—";
+
   badges.appendChild(role);
 
   top.appendChild(left);
   top.appendChild(badges);
 
-  const actions = document.createElement("div");
-  actions.className = "docActions";
-
-  const icons = document.createElement("div");
-  icons.className = "iconRow";
-  icons.appendChild(makeIcon("🩺"));
-  icons.appendChild(makeIcon("🧾"));
-  icons.appendChild(makeIcon("📍"));
-
-  actions.appendChild(icons);
-
-  // petit bouton “mettre hors service” optionnel via CRUD (sinon tu peux enlever)
-  const mini = document.createElement("button");
-  mini.className = "btnLite";
-  mini.textContent = (state.placements[d.id] === "hors") ? "Mettre en Réserve" : "Mettre Hors service";
-  mini.addEventListener("click", (e) => {
-    e.stopPropagation();
-    state.placements[d.id] = (state.placements[d.id] === "hors") ? "reserve" : "hors";
-    saveState();
-    renderAll();
-  });
-  actions.appendChild(mini);
-
   card.appendChild(top);
-  card.appendChild(actions);
-
   return card;
 }
+
 
 function makeIcon(txt){
   const el = document.createElement("span");
@@ -391,18 +374,26 @@ function makeDroppable(el, zoneId){
     const docId = e.dataTransfer.getData("text/plain");
     if(!docId) return;
 
-    // si doc est hors service et tu le drop ailleurs, on autorise (sinon tu peux bloquer)
-    state.placements[docId] = zoneId;
+    let targetZone = zoneId;
 
-    // si on drop dans une zone de détails, c’est la zone sélectionnée
-    if(zoneId === "__DETAILS_DROP__"){
-      state.placements[docId] = selectedZoneId;
+    // si on drop dans la liste Détails, on drop dans la zone sélectionnée
+    if(targetZone === "__DETAILS_DROP__"){
+      targetZone = selectedZoneId || "reserve";
     }
+
+    // Interdiction optionnelle: un doc "hors" reste hors si tu veux (commente si tu veux autoriser)
+    // if (isHorsZone(state.placements[docId]) && !isHorsZone(targetZone)) return;
+
+    state.placements[docId] = targetZone;
+
+    // ✅ Après le drop, on “focus” la zone => tu vois le doc dedans
+    setSelectedZone(targetZone);
 
     saveState();
     renderAll();
   });
 }
+
 
 function countInZone(zoneId){
   return cfg.doctors.reduce((acc, d) => acc + ((state.placements[d.id] === zoneId) ? 1 : 0), 0);
