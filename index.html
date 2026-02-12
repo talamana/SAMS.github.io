@@ -14,10 +14,15 @@
     </div>
 
     <div class="topRight">
-      <div class="bossDrop droppable" data-zone="boss">
-        <div class="bossTitle">Responsable du dispatch</div>
-        <div class="bossHint">Glissez-déposez une carte ici</div>
-      </div>
+      <div class="bossDrop" id="bossBox">
+  <div class="bossTitle">Responsable du dispatch</div>
+  <div class="bossHint">Sélectionnez un médecin</div>
+
+  <select id="bossSelect" class="bossSelect"></select>
+
+  <div id="bossDisplay" class="bossDisplay"></div>
+</div>
+
 
       <button class="btnDanger" id="btnAllReserve">Tout renvoyer en Réserve</button>
       <button class="btnDanger" id="btnManage">Gérer médecins</button>
