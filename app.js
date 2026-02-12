@@ -53,7 +53,6 @@ async function init(){
   state = loadState() ?? makeInitialState(cfg);
 
   renderTabs();
-  ll();
   wireGlobalDroppables();
   wireButtons();
 }
@@ -74,11 +73,11 @@ function makeInitialState(cfg){
 function loadState(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return null;
+    if(!raw) return nu;
     const s = JSON.parse(raw);
-    if(!s?.placements) return null;
+    if(!s?.placements) return nu;
     return s;
-  }catch{ return null; }
+  }catch{ return nu; }
 }
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
