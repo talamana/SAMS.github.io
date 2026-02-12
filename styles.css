@@ -374,3 +374,14 @@ body{
 .btnLite.danger{background: rgba(255,0,0,.08); border-color: rgba(255,0,0,.25)}
 .crudHint{margin-top:10px; font-size:12px; opacity:.75}
 .modalFooter{display:flex; justify-content:flex-end; padding:10px 6px 4px 6px}
+.zoneBody{
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+.docCard.compact{
+  padding: 10px;
+  margin-bottom: 0;
+}
+.docCard.compact .docActions{ display:none; }
+
