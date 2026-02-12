@@ -10,7 +10,6 @@
   <header class="header">
     <div class="titleBlock">
       <h1 id="appTitle">Dispatch SAMS</h1>
-
       <div class="tabs" id="tabs"></div>
     </div>
 
@@ -21,6 +20,7 @@
       </div>
 
       <button class="btnDanger" id="btnAllReserve">Tout renvoyer en Réserve</button>
+      <button class="btnDanger" id="btnManage">Gérer médecins</button>
     </div>
   </header>
 
@@ -31,9 +31,20 @@
       <div class="sectionTitle">Interventions</div>
       <div class="interventionsRow" id="interventionsRow"></div>
 
-      <div class="footerHint" id="footerHint">
-        Connecté — Astuces : glissez-déposez une carte sur n'importe quelle zone. Double-cliquez une carte pour la renvoyer rapidement.
-        Utilisez le bouton sur la carte pour basculer « En service / Hors-service ».
+      <div class="sectionTitle">Détails</div>
+      <div class="detailsPanel">
+        <div class="detailsHeader">
+          <div>
+            <div class="detailsTitle" id="detailsTitle">Sélectionne une zone</div>
+            <div class="detailsSub" id="detailsSub">Clique sur une salle / intervention / réserve</div>
+          </div>
+          <div class="detailsCount" id="detailsCount">0</div>
+        </div>
+        <div class="detailsList droppable" id="detailsList" data-zone="__DETAILS_DROP__"></div>
+      </div>
+
+      <div class="footerHint">
+        Astuces : clique une zone pour voir qui est dedans. Double-clique une carte pour la renvoyer en Réserve.
       </div>
     </section>
 
@@ -57,12 +68,66 @@
               <span>Hors service</span>
               <span class="count" id="countHors">0 médecins</span>
             </div>
-            <div class="scroll" id="horsList"></div>
+            <div class="scroll droppable" id="horsList" data-zone="hors"></div>
           </div>
         </div>
       </div>
     </aside>
   </main>
+
+  <!-- Modal CRUD -->
+  <dialog id="crud">
+    <form method="dialog" class="modalCrud">
+      <div class="modalTop">
+        <h3>Gérer les médecins</h3>
+        <button class="modalX" value="cancel" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="crudGrid">
+        <div class="crudList" id="crudList"></div>
+
+        <div class="crudForm">
+          <div class="formRow">
+            <label>Id</label>
+            <input id="fId" placeholder="ex: dr_miles"/>
+          </div>
+          <div class="formRow">
+            <label>Nom</label>
+            <input id="fName" placeholder="Dr …"/>
+          </div>
+          <div class="formRow">
+            <label>Rôle</label>
+            <input id="fRole" placeholder="Urgences / Chir / …"/>
+          </div>
+          <div class="formRow">
+            <label>Tél</label>
+            <input id="fPhone" placeholder="555-1234"/>
+          </div>
+          <div class="formRow">
+            <label>Statut</label>
+            <select id="fBucket">
+              <option value="reserve">Réserve</option>
+              <option value="hors">Hors service</option>
+            </select>
+          </div>
+
+          <div class="crudActions">
+            <button id="btnNew" class="btnLite" value="noop">Nouveau</button>
+            <button id="btnSave" class="btnLite" value="noop">Enregistrer</button>
+            <button id="btnDelete" class="btnLite danger" value="noop">Supprimer</button>
+          </div>
+
+          <div class="crudHint">
+            Tout est sauvegardé en local (localStorage). Pour un vrai multi-user, on branchera un backend plus tard.
+          </div>
+        </div>
+      </div>
+
+      <menu class="modalFooter">
+        <button class="btnLite" value="ok">Fermer</button>
+      </menu>
+    </form>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
