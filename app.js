@@ -51,6 +51,7 @@ let btnDelete;
 
 let selectedZoneId = null;
 let selectedDoctorId = null;
+let realtimeChannel = null;
 
 window.addEventListener("DOMContentLoaded", () => {
   init();
@@ -108,7 +109,7 @@ btnDelete = document.getElementById("btnDelete");
   renderTabs();
   renderAll();
   wireGlobalDroppables();
-  wireButtons();
+  s();
   renderBossSelect();
   wireBossSelect();
 
@@ -207,6 +208,18 @@ function makeInitialState(cfg){
 }
 
 function wireButtons(){
+  const missing = [];
+  if(!btnAllReserve) missing.push("btnAllReserve");
+  if(!btnManage) missing.push("btnManage");
+  if(!btnNew) missing.push("btnNew");
+  if(!btnSave) missing.push("btnSave");
+  if(!btnDelete) missing.push("btnDelete");
+
+  if(missing.length){
+    console.error("Boutons introuvables dans le DOM:", missing.join(", "));
+    return;
+  }
+  
   btnAllReserve.addEventListener("click", () => {
   for(const d of cfg.doctors){
     const z = state.placements[d.id];
@@ -730,8 +743,6 @@ function startRealtime(){
       { event: "UPDATE", schema: "public", table: TB_STATE, filter: `id=eq.${STATE_ROW_ID}` },
       (payload) => {
         const st = payload.new;
-
-        // évite de planter si st incomplet
         if(!st) return;
 
         state.activeSiteId = st.active_site_id || state.activeSiteId;
@@ -740,14 +751,12 @@ function startRealtime(){
 
         renderTabs();
         renderAll();
-        renderBossSelect(); // pour mettre à jour le select si boss change
+        renderBossSelect();
       }
     )
-    .subscribe((status) => {
-      // optionnel
-      // console.log("realtime status:", status);
-    });
+    .subscribe();
 }
+
 async function dbUpsertDoctor(doc){
   const { error } = await supabase
     .from(TB_DOCTORS)
