@@ -109,7 +109,7 @@ btnDelete = document.getElementById("btnDelete");
   renderTabs();
   renderAll();
   wireGlobalDroppables();
-  s();
+  wireButtons();
   renderBossSelect();
   wireBossSelect();
 
@@ -208,32 +208,35 @@ function makeInitialState(cfg){
 }
 
 function wireButtons(){
-  const missing = [];
-  if(!btnAllReserve) missing.push("btnAllReserve");
-  if(!btnManage) missing.push("btnManage");
-  if(!btnNew) missing.push("btnNew");
-  if(!btnSave) missing.push("btnSave");
-  if(!btnDelete) missing.push("btnDelete");
+  // Si init() n’a pas rempli ces variables, elles restent undefined.
+  // On log pour diagnostiquer immédiatement.
+  const refs = {
+    btnAllReserve,
+    btnManage,
+    btnNew,
+    btnSave,
+    btnDelete
+  };
 
-  if(missing.length){
-    console.error("Boutons introuvables dans le DOM:", missing.join(", "));
+  const bad = Object.entries(refs)
+    .filter(([_, v]) => !v)
+    .map(([k]) => k);
+
+  if(bad.length){
+    console.error("wireButtons: éléments DOM manquants:", bad.join(", "));
+    console.error("Vérifie les id dans index.html ET que init() a bien été exécuté sans crash.");
     return;
   }
-  
+
   btnAllReserve.addEventListener("click", () => {
-  for(const d of cfg.doctors){
-    const z = state.placements[d.id];
-
-    // On NE touche JAMAIS ceux qui sont hors service (robuste)
-    if (isHorsZone(z)) continue;
-
-    // Tous les autres (salle/intervention/boss/réserve/undefined) -> réserve
-    state.placements[d.id] = "reserve";
-  }
-  saveState();
-  renderAll();
-});
-
+    for(const d of cfg.doctors){
+      const z = state.placements[d.id];
+      if(isHorsZone(z)) continue;
+      state.placements[d.id] = "reserve";
+    }
+    saveState();
+    renderAll();
+  });
 
   btnManage.addEventListener("click", () => {
     selectedDoctorId = null;
@@ -250,46 +253,45 @@ function wireButtons(){
   });
 
   btnSave.addEventListener("click", async (e) => {
-  e.preventDefault();
-  const doc = readForm();
-  if(!doc) return;
+    e.preventDefault();
+    const doc = readForm();
+    if(!doc) return;
 
-  // bucket dans DB
-  const ok = await dbUpsertDoctor(doc);
-  if(!ok) return;
+    const ok = await dbUpsertDoctor(doc);
+    if(!ok) return;
 
-  // refresh doctors
-  await refreshDoctorsFromDb();
+    await refreshDoctorsFromDb();
 
-  // placement si nouveau ou changement bucket
-  if(!state.placements[doc.id]){
-    state.placements[doc.id] = (doc.bucket === "hors") ? "hors" : "reserve";
-    saveState(); // async
-  } else {
-    // si bucket=hors => on le met hors, sinon on ne force pas (à toi de choisir)
-    if(doc.bucket === "hors") {
+    if(!state.placements[doc.id]){
+      state.placements[doc.id] = (doc.bucket === "hors") ? "hors" : "reserve";
+      saveState();
+      renderAll();
+      return;
+    }
+
+    if(doc.bucket === "hors"){
       state.placements[doc.id] = "hors";
       saveState();
       renderAll();
     }
-  }
-});}
-
+  });
 
   btnDelete.addEventListener("click", async (e) => {
-  e.preventDefault();
-  const id = (fId.value || "").trim();
-  if(!id) return;
+    e.preventDefault();
+    const id = (fId.value || "").trim();
+    if(!id) return;
 
-  const ok = await dbDeleteDoctor(id);
-  if(!ok) return;
+    const ok = await dbDeleteDoctor(id);
+    if(!ok) return;
 
-  delete state.placements[id];
-  saveState();
+    delete state.placements[id];
+    saveState();
 
-  await refreshDoctorsFromDb();
-  clearForm();
-});
+    await refreshDoctorsFromDb();
+    clearForm();
+    renderAll();
+  });
+}
 
 
 function wireGlobalDroppables(){
